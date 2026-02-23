@@ -1,40 +1,48 @@
-﻿using MailKit.Net.Smtp;
+﻿using Application.Services;
+using Infrastructure.Settings;
+using MailKit.Net.Smtp;
 using MailKit.Security;
+using Microsoft.Extensions.Options;
 using MimeKit;
-using VaultSharp;
-using VaultSharp.V1.AuthMethods.Token;
 
-namespace Application.Services;
+namespace Infrastructure.Services;
 
 public sealed class EmailService : IEmailService
 {
-    public async Task SendVerificationEmailAsync(string toEmail, string verificationToken, CancellationToken cancellationToken)
+    private readonly SmtpSettings _settings;
+
+    public EmailService(IOptions<SmtpSettings> options)
     {
-        var authMethod = new TokenAuthMethodInfo("root");
-        var vaultClientSettings = new VaultClientSettings("http://127.0.0.1:8200", authMethod);
-        var vaultClient = new VaultClient(vaultClientSettings);
-        var secret = await vaultClient.V1.Secrets.KeyValue.V2.ReadSecretAsync(path: "smtp", mountPoint: "secret");
+        _settings = options.Value;
+    }
 
-        var smtpHost = secret.Data.Data["Host"].ToString();
-        var smtpPort = int.Parse(secret.Data.Data["Port"].ToString()!);
-        var smtpUser = secret.Data.Data["User"].ToString();
-        var smtpPass = secret.Data.Data["Password"].ToString();
-
+    public async Task SendVerificationEmailAsync(string toEmail, string verificationLink, CancellationToken cancellationToken)
+    {
         var message = new MimeMessage();
-        message.From.Add(new MailboxAddress("MedCore", smtpUser!));
+        message.From.Add(new MailboxAddress(_settings.SenderName, _settings.User));
         message.To.Add(new MailboxAddress("", toEmail));
         message.Subject = "Activate your MedCore account";
 
         var bodyBuilder = new BodyBuilder
         {
-            HtmlBody = $"<p>Your activation code is: <strong>{verificationToken}</strong></p>"
+            HtmlBody = $@"
+                <div style='font-family: Arial, sans-serif; padding: 20px;'>
+                    <h2>Welcome to MedCore!</h2>
+                    <p>Please confirm your email address by clicking the link below:</p>
+                    <p>
+                        <a href='{verificationLink}' style='background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>
+                            Verify Email
+                        </a>
+                    </p>
+                    <p>If you did not request this, please ignore this email.</p>
+                </div>"
         };
 
         message.Body = bodyBuilder.ToMessageBody();
 
         using var client = new SmtpClient();
-        await client.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls, cancellationToken);
-        await client.AuthenticateAsync(smtpUser, smtpPass, cancellationToken);
+        await client.ConnectAsync(_settings.Host, _settings.Port, SecureSocketOptions.StartTls, cancellationToken);
+        await client.AuthenticateAsync(_settings.User, _settings.Password, cancellationToken);
         await client.SendAsync(message, cancellationToken);
         await client.DisconnectAsync(true, cancellationToken);
     }
