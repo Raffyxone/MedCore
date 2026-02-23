@@ -1,11 +1,10 @@
-﻿using Application.Services;
-using Infrastructure.Settings;
+﻿using Infrastructure.Settings;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Options;
 using MimeKit;
 
-namespace Infrastructure.Services;
+namespace Application.Services;
 
 public sealed class EmailService : IEmailService
 {

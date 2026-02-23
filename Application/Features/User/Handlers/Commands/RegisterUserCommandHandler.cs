@@ -54,7 +54,10 @@ public sealed class RegisterUserCommandHandler : IRequestHandler<RegisterUserCom
         _context.Users.Add(user);
         await _context.SaveChangesAsync(cancellationToken);
 
-        await _emailService.SendVerificationEmailAsync(user.Email, verificationToken, cancellationToken);
+        string apiBaseUrl = "https://localhost:7018";
+        string verificationLink = $"{apiBaseUrl}/api/users/verify?token={verificationToken}";
+
+        await _emailService.SendVerificationEmailAsync(user.Email, verificationLink, cancellationToken);
 
         return Result.Success(user.Id);
     }
