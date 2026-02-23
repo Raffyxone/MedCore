@@ -1,8 +1,5 @@
-﻿using Application.Features.User.Domain;
-using Application.Services;
+﻿using Application.Interfaces;
 using Infrastructure.DbContexts;
-using Infrastructure.Repositories;
-using Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,9 +12,7 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(connectionString));
 
-        services.AddScoped<IPasswordHasher, PasswordHasher>();
-        services.AddScoped<IUserRepository, UserRepository>();
-        services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 
         return services;
     }

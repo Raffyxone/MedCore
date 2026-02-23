@@ -1,10 +1,10 @@
-﻿using Application.Features.User.Domain.Entities;
-using Application.Features.User.Domain.ValueObjects;
+﻿using Application.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Shared.Entities;
 
 namespace Infrastructure.DbContexts;
 
-public class ApplicationDbContext : DbContext
+public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
@@ -20,15 +20,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<User>(builder =>
         {
             builder.HasKey(u => u.Id);
-
-            builder.Property(u => u.Email)
-                .HasConversion(
-                    email => email.Value,
-                    value => Email.Create(value).Value
-                )
-                .IsRequired()
-                .HasMaxLength(150);
-
+            builder.Property(u => u.Email).IsRequired().HasMaxLength(150);
             builder.HasIndex(u => u.Email).IsUnique();
         });
     }

@@ -1,21 +1,22 @@
-﻿using Application.Features.User.Domain;
+﻿using Application.Interfaces;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Shared.Results;
 
 namespace Application.Features.User.Handlers.Commands;
 
-public class VerifyUserCommandHandler : IRequestHandler<VerifyUserCommand, Result>
+public sealed class VerifyUserCommandHandler : IRequestHandler<VerifyUserCommand, Result>
 {
-    private readonly IUserRepository _userRepository;
+    private readonly IApplicationDbContext _context;
 
-    public VerifyUserCommandHandler(IUserRepository userRepository)
+    public VerifyUserCommandHandler(IApplicationDbContext context)
     {
-        _userRepository = userRepository;
+        _context = context;
     }
 
     public async Task<Result> Handle(VerifyUserCommand request, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.GetByVerificationTokenAsync(request.Token, cancellationToken);
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.VerificationToken == request.Token, cancellationToken);
 
         if (user is null)
         {
@@ -27,9 +28,11 @@ public class VerifyUserCommandHandler : IRequestHandler<VerifyUserCommand, Resul
             return Result.Failure(new Error("User.ExpiredToken", "The verification token has expired."));
         }
 
-        user.ConfirmEmail();
+        user.IsEmailConfirmed = true;
+        user.VerificationToken = null;
+        user.VerificationTokenExpires = null;
 
-        await _userRepository.UpdateAsync(user, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
 
         return Result.Success();
     }

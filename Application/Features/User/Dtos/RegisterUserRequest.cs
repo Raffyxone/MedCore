@@ -6,4 +6,4 @@ using System.Threading.Tasks;
 
 namespace Application.Features.User.Dtos;
 
-public record RegisterUserRequest(string Email, string Password);
+public sealed record RegisterUserRequest(string Email, string Password);

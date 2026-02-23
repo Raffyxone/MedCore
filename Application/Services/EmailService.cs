@@ -1,20 +1,18 @@
-﻿using Application.Services;
-using MailKit.Net.Smtp;
+﻿using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
 using VaultSharp;
 using VaultSharp.V1.AuthMethods.Token;
 
-namespace Infrastructure.Services;
+namespace Application.Services;
 
-public class EmailService : IEmailService
+public sealed class EmailService : IEmailService
 {
     public async Task SendVerificationEmailAsync(string toEmail, string verificationToken, CancellationToken cancellationToken)
     {
         var authMethod = new TokenAuthMethodInfo("root");
         var vaultClientSettings = new VaultClientSettings("http://127.0.0.1:8200", authMethod);
         var vaultClient = new VaultClient(vaultClientSettings);
-
         var secret = await vaultClient.V1.Secrets.KeyValue.V2.ReadSecretAsync(path: "smtp", mountPoint: "secret");
 
         var smtpHost = secret.Data.Data["Host"].ToString();
@@ -25,12 +23,13 @@ public class EmailService : IEmailService
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress("MedCore", smtpUser!));
         message.To.Add(new MailboxAddress("", toEmail));
-        message.Subject = "Activa tu cuenta en MedCore";
+        message.Subject = "Activate your MedCore account";
 
         var bodyBuilder = new BodyBuilder
         {
-            HtmlBody = $"<p>Tu código de activación es: <strong>{verificationToken}</strong></p>"
+            HtmlBody = $"<p>Your activation code is: <strong>{verificationToken}</strong></p>"
         };
+
         message.Body = bodyBuilder.ToMessageBody();
 
         using var client = new SmtpClient();

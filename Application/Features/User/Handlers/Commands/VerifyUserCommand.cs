@@ -8,5 +8,5 @@ using Shared.Results;
 
 namespace Application.Features.User.Handlers.Commands;
 
-public record VerifyUserCommand(string Token) : IRequest<Result>;
+public sealed record VerifyUserCommand(string Token) : IRequest<Result>;
 

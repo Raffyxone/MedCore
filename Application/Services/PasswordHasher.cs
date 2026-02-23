@@ -1,13 +1,14 @@
-﻿using System;
+﻿using Application.Services;
+using Org.BouncyCastle.Crypto.Generators;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Application.Services;
 
 namespace Infrastructure.Services;
 
-public class PasswordHasher : IPasswordHasher
+public sealed class PasswordHasher : IPasswordHasher
 {
     public string Hash(string password) => BCrypt.Net.BCrypt.HashPassword(password);
 
