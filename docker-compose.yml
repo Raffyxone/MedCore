@@ -1,0 +1,31 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: medcore_sql
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong@Passw0rd
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlvolume:/var/opt/mssql
+
+  vault:
+    image: hashicorp/vault:latest
+    container_name: medcore_vault
+    ports:
+      - "8201:8200"
+    environment:
+      - VAULT_DEV_ROOT_TOKEN_ID=dev-only-token
+      - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200
+      - VAULT_ADDR=http://127.0.0.1:8200
+    cap_add:
+      - IPC_LOCK
+    command: >
+      sh -c "vault server -dev &
+      sleep 5 &&
+      vault kv put secret/smtp Host=smtp.gmail.com Port=587 User=${SMTP_USER} Password=${SMTP_PASSWORD} SenderName='MedCore System' &&
+      wait"
+
+volumes:
+  sqlvolume:
