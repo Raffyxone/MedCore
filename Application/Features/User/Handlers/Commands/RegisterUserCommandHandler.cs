@@ -26,9 +26,24 @@ public sealed class RegisterUserCommandHandler : IRequestHandler<RegisterUserCom
 
     public async Task<Result<Guid>> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(request.FirstName) || string.IsNullOrWhiteSpace(request.LastName))
+        {
+            return Result.Failure<Guid>(new Error("User.InvalidName", "First name and last name are required."));
+        }
+
+        if (request.Password != request.ConfirmPassword)
+        {
+            return Result.Failure<Guid>(new Error("User.PasswordMismatch", "The passwords do not match."));
+        }
+
         if (string.IsNullOrWhiteSpace(request.Email) || !Regex.IsMatch(request.Email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
         {
             return Result.Failure<Guid>(new Error("User.InvalidEmail", "The email format is invalid."));
+        }
+
+        if (!Enum.IsDefined(typeof(UserType), request.UserType))
+        {
+            return Result.Failure<Guid>(new Error("User.InvalidType", "The provided user type is invalid."));
         }
 
         bool emailExists = await _context.Users.AnyAsync(u => u.Email == request.Email, cancellationToken);
@@ -44,8 +59,11 @@ public sealed class RegisterUserCommandHandler : IRequestHandler<RegisterUserCom
         var user = new Shared.Entities.User
         {
             Id = Guid.NewGuid(),
+            FirstName = request.FirstName,
+            LastName = request.LastName,
             Email = request.Email,
             PasswordHash = hashedPassword,
+            UserType = request.UserType,
             IsEmailConfirmed = false,
             VerificationToken = verificationToken,
             VerificationTokenExpires = DateTime.UtcNow.AddHours(24)

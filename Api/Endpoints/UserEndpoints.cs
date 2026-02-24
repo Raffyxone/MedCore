@@ -9,11 +9,18 @@ public static class UserEndpoints
 {
     public static void MapUserEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("api/users").WithTags("Users");
+        var group = app.MapGroup("api/users").WithTags("Auth");
 
         group.MapPost("register", async (RegisterUserRequest request, ISender sender) =>
         {
-            var command = new RegisterUserCommand(request.Email, request.Password);
+            var command = new RegisterUserCommand(
+                request.FirstName,
+                request.LastName,
+                request.Email,
+                request.Password,
+                request.ConfirmPassword,
+                request.UserType);
+
             var result = await sender.Send(command);
 
             if (result.IsFailure)
@@ -21,7 +28,7 @@ public static class UserEndpoints
                 return Results.BadRequest(result.Error);
             }
 
-            return Results.Ok(new { Id = result.Value, Message = "User registered successfully. Please check your email to verify." });
+            return Results.Ok(new { Id = result.Value, Message = "Registration successful. Please check your email to verify your account." });
         })
         .WithName("RegisterUser")
         .Produces(StatusCodes.Status200OK)
